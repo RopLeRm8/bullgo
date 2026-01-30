@@ -1,11 +1,17 @@
 package main
 
-import "bullgo/examples"
+import (
+	"bullgo/examples"
+	"os"
+)
+
+// Main to test examples
 
 func main() {
-	examples.BasicError()
+	switch os.Args[1] {
+	case "example-error":
+		examples.BasicError()
+	case "example-success":
+		examples.BasicSuccess()
+	}
 }
-
-// Workers -> always working per queue
-// Jobs -> All stack up in 1 Queue (the queue is created by the user TOO!)
-// Queues -> are the root of bullgo system
