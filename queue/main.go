@@ -1,46 +1,34 @@
 package queue
 
 import (
-	"bullgo/jobs"
+	queue_domain "bullgo/internal/domain/queue"
+	redis_domain "bullgo/internal/domain/redis"
 )
 
-type RedisConnection struct {
-	Host                 string
-	Port                 int
-	MaxRetriesPerRequest *int
-}
+var Queues []queue_domain.Queue
 
-type Queue struct {
-	Name       string
-	Connection RedisConnection
-}
-
-type QueueOption func(*Queue)
-
-func CreateQueue(opts ...QueueOption) *Queue {
-	q := &Queue{
-		Connection: RedisConnection{Host: "127.0.0.1", Port: 6379, MaxRetriesPerRequest: nil},
+func CreateQueue(opts ...queue_domain.QueueOption) *queue_domain.Queue {
+	q := &queue_domain.Queue{
+		Connection: redis_domain.RedisConnection{Host: "127.0.0.1", Port: 6379, Password: nil},
 	}
 
 	for _, opt := range opts {
 		opt(q)
 	}
 
+	queue_domain.InitClient(q)
+	Queues = append(Queues, *q)
 	return q
 }
 
-func NameLayer(name string) QueueOption {
-	return func(q *Queue) {
+func NameLayer(name string) queue_domain.QueueOption {
+	return func(q *queue_domain.Queue) {
 		q.Name = name
 	}
 }
 
-func RedisLayer(conn RedisConnection) QueueOption {
-	return func(q *Queue) {
-		q.Connection = RedisConnection{Host: conn.Host, Port: conn.Port, MaxRetriesPerRequest: conn.MaxRetriesPerRequest}
+func RedisLayer(conn redis_domain.RedisConnection) queue_domain.QueueOption {
+	return func(q *queue_domain.Queue) {
+		q.Connection = redis_domain.RedisConnection{Host: conn.Host, Port: conn.Port, Password: conn.Password}
 	}
-}
-
-func (q *Queue) Add(job jobs.Job) error {
-	return nil
 }

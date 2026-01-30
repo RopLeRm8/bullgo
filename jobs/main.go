@@ -1,5 +1,7 @@
 package jobs
 
+import "time"
+
 type DelayType string
 
 const (
@@ -12,35 +14,41 @@ type BackoffType struct {
 	Delay int
 }
 
-type JobOptionsType struct {
-	JobId            string
+type OptionsType struct {
 	Attempts         int
 	Backoff          BackoffType
-	Delay            int
 	RemoveOnComplete bool
 	RemoveOnFailure  bool
 }
 
-type JobOptionsConfig struct {
-	JobId            *string
+type OptionsConfig struct {
 	Attempts         *int
 	Backoff          *BackoffType
-	Delay            *int
 	RemoveOnComplete *bool
 	RemoveOnFailure  *bool
 }
 
 type Job struct {
-	JobName    string
-	Data       any
-	JobOptions JobOptionsType
+	ID        string
+	Name      string
+	Data      any
+	Delay     *int
+	Options   OptionsType
+	CreatedAt time.Time
+}
+
+type JobInput struct {
+	ID    string
+	Name  string
+	Delay *int
+	Data  any
 }
 
 type JobOption func(*Job)
 
-func CreateJob(opts ...JobOption) *Job {
+func CreateJob(input JobInput, opts ...JobOption) *Job {
 	job := &Job{
-		JobOptions: JobOptionsType{
+		Options: OptionsType{
 			Attempts:         1,
 			Backoff:          BackoffType{Type: "exponential", Delay: 2000},
 			RemoveOnComplete: true,
@@ -52,59 +60,65 @@ func CreateJob(opts ...JobOption) *Job {
 		opt(job)
 	}
 
+	job.ID = input.ID
+	job.Name = input.Name
+	job.Data = input.Data
+	job.Delay = input.Delay
+	job.CreatedAt = time.Now()
 	return job
 }
 
 func JobId(jobid string) JobOption {
 	return func(j *Job) {
-		j.JobOptions.JobId = jobid
+		j.ID = jobid
+	}
+}
+
+func JobName(jobName string) JobOption {
+	return func(j *Job) {
+		j.Name = jobName
+	}
+}
+
+func JobData(data any) JobOption {
+	return func(j *Job) {
+		j.Data = data
 	}
 }
 
 func Attempts(attemps int) JobOption {
 	return func(j *Job) {
-		j.JobOptions.Attempts = attemps
+		j.Options.Attempts = attemps
 	}
 }
 
 func Backoff(backoff BackoffType) JobOption {
 	return func(j *Job) {
-		j.JobOptions.Backoff = backoff
-	}
-}
-
-func Delay(delay int) JobOption {
-	return func(j *Job) {
-		j.JobOptions.Delay = delay
+		j.Options.Backoff = backoff
 	}
 }
 
 func Removals(RemoveOnComplete bool, RemoveOnFailure bool) JobOption {
 	return func(j *Job) {
-		j.JobOptions.RemoveOnComplete = RemoveOnComplete
-		j.JobOptions.RemoveOnFailure = RemoveOnFailure
+		j.Options.RemoveOnComplete = RemoveOnComplete
+		j.Options.RemoveOnFailure = RemoveOnFailure
 	}
 }
 
-func JobOptions(cfg JobOptionsConfig) JobOption {
+func Options(cfg OptionsConfig) JobOption {
 	return func(j *Job) {
-		if cfg.JobId != nil {
-			j.JobOptions.JobId = *cfg.JobId
-		}
 		if cfg.Attempts != nil {
-			j.JobOptions.Attempts = *cfg.Attempts
+			j.Options.Attempts = *cfg.Attempts
 		}
 		if cfg.Backoff != nil {
-			j.JobOptions.Backoff = *cfg.Backoff
+			j.Options.Backoff = *cfg.Backoff
 		}
-		if cfg.Delay != nil {
-			j.JobOptions.Delay = *cfg.Delay
-		}
+
 		if cfg.RemoveOnComplete != nil {
-			j.JobOptions.RemoveOnComplete = *cfg.RemoveOnComplete
+			j.Options.RemoveOnComplete = *cfg.RemoveOnComplete
 		}
 		if cfg.RemoveOnFailure != nil {
-			j.JobOptions.RemoveOnFailure = *cfg.RemoveOnFailure
+			j.Options.RemoveOnFailure = *cfg.RemoveOnFailure
 		}
 	}
 }
